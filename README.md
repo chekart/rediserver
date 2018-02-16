@@ -46,10 +46,10 @@ def test_ok(local_redis):
 Currently redis server supports the following methods:
 
 * Keys
-..* GET, SET, DEL, INCRBY, DECRBY, SCAN
+  * GET, SET, DEL, INCRBY, DECRBY, SCAN
 * Sets
-..* SADD, SPOP, SCARD
+  * SADD, SPOP, SCARD
 * Scripts
-..* SCRIPT LOAD, EVALSHA
+  * SCRIPT LOAD, EVALSHA
 * Transactions:
-..* MULTI, WATCH, EXEC
+  * MULTI, WATCH, EXEC
