@@ -23,6 +23,11 @@ class CommandQueue:
             self.rollback = True
 
     def execute(self, command, *command_args):
+        if command == b'UNWATCH':
+            self.watch.clear()
+            self.redis.remove_watch(self)
+            return resp.OK
+
         if self.transaction is None:
             return self.execute_without_transaction(command, *command_args)
         return self.execute_with_transaction(command, *command_args)
@@ -34,9 +39,10 @@ class CommandQueue:
             raise NotImplementedError()
         if command == b'EXEC':
             to_execute = self.transaction
+            rollback = self.rollback
             self.reset()
 
-            if self.rollback:
+            if rollback:
                 return resp.NIL
 
             result = []
@@ -57,7 +63,8 @@ class CommandQueue:
             self.transaction = []
             return resp.OK
         if command == b'WATCH':
-            self.redis.add_watch(args[0], self)
+            self.watch.add(args[0])
+            self.redis.add_watch(self)
             return resp.OK
 
         return self.redis.execute_single(command, *args)

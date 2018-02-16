@@ -19,16 +19,18 @@ def create_redis_server():
                 command, *command_args = await resp.read_command(reader)
                 try:
                     result = transaction.execute(command, *command_args)
-                except NotImplementedError:
-                    writer.write(resp.NOT_SUPPORTED_REPLY)
+                except resp.Error as e:
+                    response = resp.dump_response(e)
                     transaction.reset()
-                except Exception:
-                    writer.write(resp.NOT_SUPPORTED_REPLY)
+                except Exception as e:
+                    response = resp.dump_response(
+                        resp.Error('UNKNOWN', str(e))
+                    )
                     transaction.reset()
                 else:
                     response = resp.dump_response(result)
-                    writer.write(response)
 
+                writer.write(response)
                 await writer.drain()
         except asyncio.streams.IncompleteReadError:
             writer.close()
