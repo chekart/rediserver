@@ -60,6 +60,7 @@ class Redis:
         self.scripts = {}
         self.watches = set()
         self.execute_map = {}
+        self.cursors = {}
 
         self.lua_proxy = self.get_lua_proxy()
         self.lua = LuaRuntime(
@@ -87,7 +88,8 @@ class Redis:
         self.watches.add(queue)
 
     def remove_watch(self, queue):
-        self.watches.remove(queue)
+        if queue in self.watches:
+            self.watches.remove(queue)
 
     def on_change(self, key):
         for queue in self.watches:
@@ -96,10 +98,8 @@ class Redis:
     def execute_single(self, command, *args):
         try:
             return self.execute_map[command.decode().upper()](*args)
-        except resp.Error as e:
-            return e
         except KeyError:
-            raise NotImplementedError()
+            raise resp.Error('ERR', 'Command {} is not implemented yet'.format(command))
 
     @redis_command('SET')
     def execute_set(self, key: MUTABLE_KEY, value):
@@ -135,6 +135,36 @@ class Redis:
         result = initial - value
         self.keys[key] = str(result).encode()
         return result
+
+    @redis_command('DEL')
+    def execute_del(self, *keys):
+        for key in keys:
+            if key in self.keys:
+                self.on_change(key)
+                del self.keys[key]
+        return resp.OK
+
+    @redis_command('SCAN')
+    def execute_scan(self, cursor):
+        try:
+            cursor = int(cursor)
+        except ValueError:
+            return resp.Errors.INVALID_CURSOR
+
+        if cursor == 0:
+            cursor = max(self.cursors.keys()) if self.cursors else 1
+            self.cursors[cursor] = iter(set(self.keys.keys()))
+
+        bulk = []
+        for item in self.cursors[cursor]:
+            bulk.append(item)
+            if len(bulk) > 5:
+                break
+        else:
+            del self.cursors[cursor]
+            cursor = 0
+
+        return [cursor, bulk]
 
     @redis_command('SADD')
     def execute_sadd(self, key: (MUTABLE_KEY, KEY_SET), *args):

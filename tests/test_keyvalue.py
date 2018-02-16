@@ -2,6 +2,17 @@ import pytest
 from redis.exceptions import ResponseError
 
 
+KEYS_DATA = {
+    b'key1': 1,
+    b'key3': 5,
+    b'some_key': 7,
+    b'a_key': 'value',
+    b'the_key': '0',
+    b'test': 10,
+    b'data': 11,
+}
+
+
 def test_empty(redis):
     assert redis.dict == {}
 
@@ -101,3 +112,38 @@ def test_decrby_notint_value(redis):
     with pytest.raises(ResponseError, match='value is not an integer'):
         client.execute_command('DECRBY', 'test', 'value')
     assert redis.dict == {b'test': b'1'}
+
+
+def test_scan(redis):
+    client = redis.ext.client
+    for key, value in KEYS_DATA.items():
+        client.set(key, value)
+
+    result = {item for item in client.scan_iter()}
+    assert result == set(KEYS_DATA.keys())
+
+
+def test_scan_wrong_value(redis):
+    client = redis.ext.client
+    with pytest.raises(ResponseError, match='invalid cursor'):
+        client.scan('value')
+
+
+def test_scan_add(redis):
+    client = redis.ext.client
+    for key, value in KEYS_DATA.items():
+        client.set(key, value)
+
+    added = False
+    result = set()
+
+    cursor = '0'
+    while cursor != 0:
+        cursor, data = client.scan(cursor=cursor)
+        for item in data:
+            result.add(item)
+        added = True
+        client.set('another_key', 1)
+
+    assert added
+    assert result == set(KEYS_DATA.keys())
