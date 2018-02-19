@@ -41,6 +41,19 @@ def test_ok(local_redis):
     ...
 ```
 
+## Compatibility
+
+Currently redis server supports the following methods:
+
+* Keys
+  * GET, SET, DEL, INCRBY, DECRBY, SCAN
+* Sets
+  * SADD, SPOP, SCARD
+* Scripts
+  * SCRIPT LOAD, EVALSHA
+* Transactions:
+  * MULTI, WATCH, EXEC
+
 ## Embedded Redis
 
 Need a real redis instance to be flushed for each test? Say no more.
@@ -85,16 +98,3 @@ The package provides the following pytest fixtures to use.
 embedded_redis_server - creates redis server instance, with the scope of session
 
 embedded_redis - flushes redis db before and after the test
-
-## Compatibility
-
-Currently redis server supports the following methods:
-
-* Keys
-  * GET, SET, DEL, INCRBY, DECRBY, SCAN
-* Sets
-  * SADD, SPOP, SCARD
-* Scripts
-  * SCRIPT LOAD, EVALSHA
-* Transactions:
-  * MULTI, WATCH, EXEC
