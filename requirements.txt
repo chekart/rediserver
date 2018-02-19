@@ -1,3 +1,4 @@
 lupa
 pytest
 redis
+docker
