@@ -1,7 +1,7 @@
 import pytest
 import redis as redis_client
 
-pytest_plugins = 'rediserver.test.pytest',
+pytest_plugins = 'rediserver.test.pytest', 'rediserver.test.pytest_embedded',
 
 
 @pytest.fixture(scope='function')
